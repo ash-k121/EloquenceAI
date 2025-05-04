@@ -3,38 +3,100 @@ import { Mic, VideoOff, Phone, CopyPlus, Wand2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:3000'); // Update this to your server URL if needed
 
 const VideoCallPage: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [roomId, setRoomId] = useState('');
   const [joined, setJoined] = useState(false);
-  const [videoEnabled, setVideoEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
+
+  const iceServers = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' }, // public STUN server
+    ],
+  };
 
   useEffect(() => {
     if (joined) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      navigator.mediaDevices
+        .getUserMedia({ video: true, audio: true })
         .then((stream) => {
           setLocalStream(stream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;  // Ensures local stream is set to videoRef
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
           }
+
+          const pc = new RTCPeerConnection(iceServers);
+          setPeerConnection(pc);
+
+          stream.getTracks().forEach((track) => {
+            pc.addTrack(track, stream);
+          });
+
+          pc.onicecandidate = (event) => {
+            if (event.candidate) {
+              socket.emit('ice-candidate', { roomId, candidate: event.candidate });
+            }
+          };
+
+          pc.ontrack = (event) => {
+            const [stream] = event.streams;
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = stream;
+              setRemoteStream(stream);
+            }
+          };
+
+          socket.emit('join-room', roomId);
+
+          socket.on('user-joined', async () => {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('offer', { roomId, offer });
+          });
+
+          socket.on('offer', async ({ offer }) => {
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit('answer', { roomId, answer });
+          });
+
+          socket.on('answer', async ({ answer }) => {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+          });
+
+          socket.on('ice-candidate', async ({ candidate }) => {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+              console.error('Error adding ICE candidate', e);
+            }
+          });
         })
         .catch((error) => {
-          console.error('Error accessing media devices.', error);
+          console.error('Error accessing media devices:', error);
+          alert('Could not access camera or microphone. Please check your permissions.');
         });
-
-      return () => {
-        localStream?.getTracks().forEach((track) => track.stop());
-      };
     }
+
+    return () => {
+      socket.off('user-joined');
+      socket.off('offer');
+      socket.off('answer');
+      socket.off('ice-candidate');
+    };
   }, [joined]);
 
   const joinRoom = () => {
-    if (!roomId.trim()) return;
-    socket.emit('join-room', roomId);
+    if (!roomId.trim() || joined) return;
     setJoined(true);
     console.log(`Joined room: ${roomId}`);
   };
@@ -49,13 +111,23 @@ const VideoCallPage: React.FC = () => {
   };
 
   const endCall = () => {
-    localStream?.getTracks().forEach((track) => track.stop());
-    setLocalStream(null);
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
+    if (peerConnection) {
+      peerConnection.onicecandidate = null;
+      peerConnection.ontrack = null;
+      peerConnection.close();
     }
+
+    localStream?.getTracks().forEach((track) => track.stop());
+    remoteStream?.getTracks().forEach((track) => track.stop());
+
+    setLocalStream(null);
+    setRemoteStream(null);
+    setPeerConnection(null);
     setJoined(false);
     setRoomId('');
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+
     console.log('Call ended');
   };
 
@@ -65,9 +137,15 @@ const VideoCallPage: React.FC = () => {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(roomId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    navigator.clipboard
+      .writeText(roomId)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        alert('Failed to copy room code to clipboard.');
+      });
   };
 
   return (
@@ -112,14 +190,24 @@ const VideoCallPage: React.FC = () => {
           )}
 
           {joined && (
-            <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video mb-6">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           )}
 
