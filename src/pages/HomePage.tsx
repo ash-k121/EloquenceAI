@@ -22,13 +22,14 @@ const HomePage: React.FC = () => {
               Experience seamless communication across languages with our advanced AI-powered translation platform.
             </p>
             <div className="flex gap-4">
-              <motion.button
+              <motion.a
+                href="#translation-panel"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="btn-primary"
+                className="btn-primary cursor-pointer"
               >
                 Get Started
-              </motion.button>
+              </motion.a>
             </div>
           </motion.div>
           <motion.div
@@ -121,10 +122,34 @@ const HomePage: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Streamlit Embed Section */}
+      <section id="translation-panel" className="py-12 scroll-mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Real-Time Translation Panel
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Interact with our AI translation engine live! Analyze speech, view transcriptions, and see language conversions in action.
+            </p>
+            <div className="w-full h-[600px] rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 shadow-inner">
+              <iframe
+                src="http://localhost:8501"
+                className="w-full h-full"
+                frameBorder="0"
+                allowFullScreen
+                title="Streamlit AI Panel"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
 
+// FeatureCard component
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
@@ -147,6 +172,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
   );
 };
 
+// TestimonialCard component
 interface TestimonialCardProps {
   image: string;
   name: string;
