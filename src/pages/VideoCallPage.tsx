@@ -1,272 +1,94 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Mic, VideoOff, Phone, CopyPlus, Wand2 } from 'lucide-react';
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6 }}
+  className="mt-8 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-xl shadow-lg overflow-hidden border border-blue-300 dark:border-blue-700"
+>
+  <div className="p-4 flex items-center justify-between">
+    <h4 className="text-lg font-semibold text-blue-900 dark:text-white">Video Call</h4>
+    <a
+      href="http://localhost:8501"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sm text-blue-600 dark:text-blue-300 underline hover:text-blue-800 dark:hover:text-white transition"
+    >
+      Open in New Tab ↗
+    </a>
+  </div>
+
+  <div className="w-full h-[500px] bg-white dark:bg-gray-900">
+    <iframe
+      src="http://localhost:8501"
+      title="Streamlit Demo"
+      className="w-full h-full border-0"
+      loading="lazy"
+    ></iframe>
+  </div>
+</motion.div>
+import React, { useState } from 'react';
+import { Mic, MicOff, Play, Languages } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000'); // Update this to your server URL if needed
+const LiveTranscription: React.FC = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [sourceLanguage, setSourceLanguage] = useState('en');
+  const [targetLanguage, setTargetLanguage] = useState('es');
 
-const VideoCallPage: React.FC = () => {
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'zh', name: 'Chinese' },
+  ];
 
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [roomId, setRoomId] = useState('');
-  const [joined, setJoined] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [videoEnabled, setVideoEnabled] = useState(true);
-  const [peerConnection, setPeerConnection] = useState<RTCPeerConnection | null>(null);
-
-  const iceServers = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' }, // public STUN server
-    ],
-  };
-
-  useEffect(() => {
-    if (joined) {
-      navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
-        .then((stream) => {
-          setLocalStream(stream);
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = stream;
-          }
-
-          const pc = new RTCPeerConnection(iceServers);
-          setPeerConnection(pc);
-
-          stream.getTracks().forEach((track) => {
-            pc.addTrack(track, stream);
-          });
-
-          pc.onicecandidate = (event) => {
-            if (event.candidate) {
-              socket.emit('ice-candidate', { roomId, candidate: event.candidate });
-            }
-          };
-
-          pc.ontrack = (event) => {
-            const [stream] = event.streams;
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = stream;
-              setRemoteStream(stream);
-            }
-          };
-
-          socket.emit('join-room', roomId);
-
-          socket.on('user-joined', async () => {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit('offer', { roomId, offer });
-          });
-
-          socket.on('offer', async ({ offer }) => {
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit('answer', { roomId, answer });
-          });
-
-          socket.on('answer', async ({ answer }) => {
-            await pc.setRemoteDescription(new RTCSessionDescription(answer));
-          });
-
-          socket.on('ice-candidate', async ({ candidate }) => {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (e) {
-              console.error('Error adding ICE candidate', e);
-            }
-          });
-        })
-        .catch((error) => {
-          console.error('Error accessing media devices:', error);
-          alert('Could not access camera or microphone. Please check your permissions.');
-        });
-    }
-
-    return () => {
-      socket.off('user-joined');
-      socket.off('offer');
-      socket.off('answer');
-      socket.off('ice-candidate');
-    };
-  }, [joined]);
-
-  const joinRoom = () => {
-    if (!roomId.trim() || joined) return;
-    setJoined(true);
-    console.log(`Joined room: ${roomId}`);
-  };
-
-  const toggleVideo = () => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-        setVideoEnabled(track.enabled);
-      });
-    }
-  };
-
-  const endCall = () => {
-    if (peerConnection) {
-      peerConnection.onicecandidate = null;
-      peerConnection.ontrack = null;
-      peerConnection.close();
-    }
-
-    localStream?.getTracks().forEach((track) => track.stop());
-    remoteStream?.getTracks().forEach((track) => track.stop());
-
-    setLocalStream(null);
-    setRemoteStream(null);
-    setPeerConnection(null);
-    setJoined(false);
-    setRoomId('');
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-
-    console.log('Call ended');
-  };
-
-  const generateRoomCode = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setRoomId(code);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard
-      .writeText(roomId)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {
-        alert('Failed to copy room code to clipboard.');
-      });
+  const toggleListening = () => {
+    setIsListening(!isListening);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-300">
-        <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Video Call Translation</h2>
-
-          {!joined && (
-            <>
-              <div className="mb-2 flex gap-2">
-                <button
-                  onClick={generateRoomCode}
-                  className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-md flex items-center gap-1 hover:bg-green-700 dark:hover:bg-green-600 transition-colors duration-300"
-                >
-                  <Wand2 size={16} /> Generate
-                </button>
-                <button
-                  onClick={copyToClipboard}
-                  disabled={!roomId}
-                  className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded-md flex items-center gap-1 hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors duration-300"
-                >
-                  <CopyPlus size={16} /> {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <div className="mb-6 flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter or share room code"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  className="border border-gray-300 dark:border-gray-600 rounded-md p-2 w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-300"
-                />
-                <button
-                  onClick={joinRoom}
-                  className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300"
-                >
-                  Join
-                </button>
-              </div>
-            </>
-          )}
-
-          {joined && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="bg-gray-900 rounded-lg overflow-hidden aspect-video">
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6 transition-colors duration-300">
-            <div className="mb-2">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-300">Live Translation</h3>
-            </div>
-            <p className="text-gray-400 dark:text-gray-400 italic transition-colors duration-300">Translations will appear here during the call...</p>
-          </div>
-
-          {joined && (
-            <div className="flex justify-center space-x-4">
-              <ControlButton icon={<Mic size={20} />} label="Mute" color="gray" />
-              <ControlButton
-                icon={<VideoOff size={20} />}
-                label={videoEnabled ? 'Video Off' : 'Video On'}
-                color="gray"
-                onClick={toggleVideo}
-              />
-              <ControlButton
-                icon={<Phone size={20} />}
-                label="End"
-                color="red"
-                onClick={endCall}
-              />
-            </div>
-          )}
-        </div>
+    <div className="card p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Live Translation</h3>
+        
       </div>
+
+      
+
+
+      
+
+      {/* Streamlit Embed Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="mt-8 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-xl shadow-lg overflow-hidden border border-blue-300 dark:border-blue-700"
+      >
+        <div className="p-4 flex items-center justify-between">
+          <h4 className="text-lg font-semibold text-blue-900 dark:text-white">Try the Streamlit Demo</h4>
+          <a
+            href="http://localhost:8501"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 dark:text-blue-300 underline hover:text-blue-800 dark:hover:text-white transition"
+          >
+            Open in New Tab ↗
+          </a>
+        </div>
+
+        <div className="w-full h-[500px] bg-white dark:bg-gray-900">
+          <iframe
+            src="http://localhost:8501"
+            title="Streamlit Demo"
+            className="w-full h-full border-0"
+            loading="lazy"
+          ></iframe>
+        </div>
+      </motion.div>
     </div>
   );
 };
 
-interface ControlButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  color: 'gray' | 'red';
-  onClick?: () => void;
-}
-
-const ControlButton: React.FC<ControlButtonProps> = ({ icon, label, color, onClick }) => {
-  const bgColor = color === 'gray' 
-    ? 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600' 
-    : 'bg-red-500 hover:bg-red-600';
-  const textColor = color === 'gray' 
-    ? 'text-gray-700 dark:text-gray-200' 
-    : 'text-white';
-
-  return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={`flex flex-col items-center p-3 rounded-full ${bgColor} ${textColor} transition-colors duration-300`}
-    >
-      {icon}
-      <span className="text-xs mt-1">{label}</span>
-    </motion.button>
-  );
-};
-
-export default VideoCallPage;
+export default LiveTranscription;
