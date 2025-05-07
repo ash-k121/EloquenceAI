@@ -15,10 +15,10 @@ const HomePage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 transition-colors duration-300">
               Break Language Barriers with Real-Time AI Translation
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 transition-colors duration-300">
               Experience seamless communication across languages with our advanced AI-powered translation platform.
             </p>
             <div className="flex gap-4">
@@ -28,13 +28,6 @@ const HomePage: React.FC = () => {
                 className="btn-primary"
               >
                 Get Started
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="btn-secondary"
-              >
-                Watch Demo
               </motion.button>
             </div>
           </motion.div>
@@ -49,7 +42,7 @@ const HomePage: React.FC = () => {
               alt="Team collaboration"
               className="rounded-2xl shadow-2xl"
             />
-            <div className="absolute -bottom-6 -right-6 bg-white p-4 rounded-lg shadow-lg">
+            <div className="absolute -bottom-6 -right-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg transition-colors duration-300">
               <img
                 src="https://images.pexels.com/photos/3183197/pexels-photo-3183197.jpeg"
                 alt="Video call"
@@ -63,8 +56,8 @@ const HomePage: React.FC = () => {
       {/* Features Section */}
       <div className="py-12">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose EloquenceAI?</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">Why Choose EloquenceAI?</h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto transition-colors duration-300">
             Our platform offers cutting-edge features to make global communication effortless.
           </p>
         </div>
@@ -106,7 +99,7 @@ const HomePage: React.FC = () => {
 
       {/* Testimonials */}
       <div className="py-12">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">What Our Users Say</h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12 transition-colors duration-300">What Our Users Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <TestimonialCard
             image="https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg"
@@ -147,9 +140,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="text-blue-600 mb-4">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
+      <div className="text-blue-600 dark:text-blue-400 mb-4 transition-colors duration-300">{icon}</div>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 transition-colors duration-300">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">{description}</p>
     </motion.div>
   );
 };
@@ -177,11 +170,11 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ image, name, role, te
           className="w-12 h-12 rounded-full object-cover mr-4"
         />
         <div>
-          <h4 className="font-semibold text-gray-900">{name}</h4>
-          <p className="text-gray-600 text-sm">{role}</p>
+          <h4 className="font-semibold text-gray-900 dark:text-white transition-colors duration-300">{name}</h4>
+          <p className="text-gray-600 dark:text-gray-400 text-sm transition-colors duration-300">{role}</p>
         </div>
       </div>
-      <p className="text-gray-700 italic">{text}</p>
+      <p className="text-gray-700 dark:text-gray-300 italic transition-colors duration-300">{text}</p>
     </motion.div>
   );
 };

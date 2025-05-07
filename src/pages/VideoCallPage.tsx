@@ -150,23 +150,23 @@ const VideoCallPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-300">
         <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Video Call Translation</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 transition-colors duration-300">Video Call Translation</h2>
 
           {!joined && (
             <>
               <div className="mb-2 flex gap-2">
                 <button
                   onClick={generateRoomCode}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md flex items-center gap-1"
+                  className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-md flex items-center gap-1 hover:bg-green-700 dark:hover:bg-green-600 transition-colors duration-300"
                 >
                   <Wand2 size={16} /> Generate
                 </button>
                 <button
                   onClick={copyToClipboard}
                   disabled={!roomId}
-                  className="bg-gray-300 text-black px-4 py-2 rounded-md flex items-center gap-1 hover:bg-gray-400 disabled:opacity-50"
+                  className="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded-md flex items-center gap-1 hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 transition-colors duration-300"
                 >
                   <CopyPlus size={16} /> {copied ? 'Copied!' : 'Copy'}
                 </button>
@@ -177,11 +177,11 @@ const VideoCallPage: React.FC = () => {
                   placeholder="Enter or share room code"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value)}
-                  className="border border-gray-300 rounded-md p-2 w-full"
+                  className="border border-gray-300 dark:border-gray-600 rounded-md p-2 w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-300"
                 />
                 <button
                   onClick={joinRoom}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md"
+                  className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300"
                 >
                   Join
                 </button>
@@ -211,11 +211,11 @@ const VideoCallPage: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6 transition-colors duration-300">
             <div className="mb-2">
-              <h3 className="text-sm font-medium text-gray-700">Live Translation</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors duration-300">Live Translation</h3>
             </div>
-            <p className="text-gray-400 italic">Translations will appear here during the call...</p>
+            <p className="text-gray-400 dark:text-gray-400 italic transition-colors duration-300">Translations will appear here during the call...</p>
           </div>
 
           {joined && (
@@ -249,15 +249,19 @@ interface ControlButtonProps {
 }
 
 const ControlButton: React.FC<ControlButtonProps> = ({ icon, label, color, onClick }) => {
-  const bgColor = color === 'gray' ? 'bg-gray-200 hover:bg-gray-300' : 'bg-red-500 hover:bg-red-600';
-  const textColor = color === 'gray' ? 'text-gray-700' : 'text-white';
+  const bgColor = color === 'gray' 
+    ? 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600' 
+    : 'bg-red-500 hover:bg-red-600';
+  const textColor = color === 'gray' 
+    ? 'text-gray-700 dark:text-gray-200' 
+    : 'text-white';
 
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`flex flex-col items-center p-3 rounded-full ${bgColor} ${textColor}`}
+      className={`flex flex-col items-center p-3 rounded-full ${bgColor} ${textColor} transition-colors duration-300`}
     >
       {icon}
       <span className="text-xs mt-1">{label}</span>
